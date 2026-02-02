@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="flex items-center justify-between mb-4">
+  <h1 class="text-xl font-semibold">Patients</h1>
+  <a href="/patients/new" class="px-3 py-2 rounded bg-slate-900 text-white text-sm hover:bg-slate-800">Add patient</a>
+</div>
+
+<div class="bg-white border rounded-lg overflow-hidden">
+  <table class="w-full text-sm">
+    <thead class="bg-slate-50 border-b">
+      <tr>
+        <th class="text-left p-3">ID</th>
+        <th class="text-left p-3">Name</th>
+        <th class="text-left p-3">DOB</th>
+        <th class="text-left p-3">Phone</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in patients %}
+      <tr class="border-b hover:bg-slate-50">
+        <td class="p-3">{{ p.id }}</td>
+        <td class="p-3">{{ p.full_name }}</td>
+        <td class="p-3">{{ p.dob }}</td>
+        <td class="p-3">{{ p.phone or "-" }}</td>
+      </tr>
+      {% endfor %}
+
+      {% if patients|length == 0 %}
+      <tr><td class="p-6 text-slate-500" colspan="4">No patients yet.</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}

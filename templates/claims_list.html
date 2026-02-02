@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="flex items-center justify-between mb-4">
+  <h1 class="text-xl font-semibold">Claims</h1>
+
+  {% if user.role in ["admin","staff"] %}
+    <a href="/claims/new" class="px-3 py-2 rounded bg-slate-900 text-white text-sm hover:bg-slate-800">Submit claim</a>
+  {% endif %}
+</div>
+
+<div class="bg-white border rounded-lg overflow-hidden">
+  <table class="w-full text-sm">
+    <thead class="bg-slate-50 border-b">
+      <tr>
+        <th class="text-left p-3">ID</th>
+        <th class="text-left p-3">Patient</th>
+        <th class="text-left p-3">Amount</th>
+        <th class="text-left p-3">Status</th>
+        <th class="text-left p-3">Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in claims %}
+      <tr class="border-b hover:bg-slate-50">
+        <td class="p-3">{{ c.id }}</td>
+        <td class="p-3">{{ c.patient_id }}</td>
+        <td class="p-3">${{ "%.2f"|format(c.amount) }}</td>
+        <td class="p-3">
+          {% if c.status == "PENDING" %}
+            <span class="px-2 py-1 text-xs rounded bg-amber-100 text-amber-800">PENDING</span>
+          {% elif c.status == "APPROVED" %}
+            <span class="px-2 py-1 text-xs rounded bg-emerald-100 text-emerald-800">APPROVED</span>
+          {% else %}
+            <span class="px-2 py-1 text-xs rounded bg-red-100 text-red-800">REJECTED</span>
+          {% endif %}
+        </td>
+        <td class="p-3">
+          <a class="text-slate-900 hover:underline" href="/claims/{{ c.id }}">View</a>
+        </td>
+      </tr>
+      {% endfor %}
+
+      {% if claims|length == 0 %}
+      <tr><td class="p-6 text-slate-500" colspan="5">No claims yet.</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}

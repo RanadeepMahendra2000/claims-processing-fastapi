@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1 class="text-xl font-semibold mb-4">Add patient</h1>
+
+{% if error %}
+  <div class="mb-4 p-3 rounded border border-red-200 bg-red-50 text-sm text-red-700">{{ error }}</div>
+{% endif %}
+
+<form method="post" action="/patients/new" class="bg-white border rounded-lg p-5 space-y-4 max-w-xl">
+  <div>
+    <label class="text-sm font-medium">Full name</label>
+    <input name="full_name" class="mt-1 w-full px-3 py-2 border rounded-md" required />
+  </div>
+
+  <div>
+    <label class="text-sm font-medium">Date of birth</label>
+    <input name="dob" class="mt-1 w-full px-3 py-2 border rounded-md" placeholder="YYYY-MM-DD" required />
+  </div>
+
+  <div>
+    <label class="text-sm font-medium">Phone</label>
+    <input name="phone" class="mt-1 w-full px-3 py-2 border rounded-md" />
+  </div>
+
+  <div class="flex items-center gap-2">
+    <button class="px-4 py-2 rounded bg-slate-900 text-white text-sm hover:bg-slate-800">Create</button>
+    <a href="/patients" class="text-sm text-slate-600 hover:underline">Cancel</a>
+  </div>
+</form>
+
+{% endblock %}

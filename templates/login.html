@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="max-w-md mx-auto bg-white border rounded-lg p-6">
+  <h1 class="text-lg font-semibold">Sign in</h1>
+  <p class="text-sm text-slate-500 mt-1">Use your account to access the system.</p>
+
+  {% if error %}
+    <div class="mt-4 p-3 rounded border border-red-200 bg-red-50 text-sm text-red-700">{{ error }}</div>
+  {% endif %}
+
+  <form class="mt-5 space-y-4" method="post" action="/login">
+    <div>
+      <label class="text-sm font-medium">Email</label>
+      <input name="email" class="mt-1 w-full px-3 py-2 border rounded-md" required />
+    </div>
+
+    <div>
+      <label class="text-sm font-medium">Password</label>
+      <input type="password" name="password" class="mt-1 w-full px-3 py-2 border rounded-md" required />
+    </div>
+
+    <button class="w-full px-3 py-2 rounded-md bg-slate-900 text-white hover:bg-slate-800">
+      Sign in
+    </button>
+  </form>
+
+  <!-- Optional: keep this small if you want demo credentials visible -->
+  <div class="mt-4 text-xs text-slate-500">
+    Demo: admin@demo.com / Admin@123 · staff@demo.com / Staff@123 · patient@demo.com / Patient@123
+  </div>
+</div>
+
+{% endblock %}

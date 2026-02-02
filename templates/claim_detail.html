@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="flex items-center justify-between mb-4">
+  <h1 class="text-xl font-semibold">Claim #{{ claim.id }}</h1>
+  <a href="/claims" class="text-sm text-slate-600 hover:underline">Back</a>
+</div>
+
+{% if error %}
+  <div class="mb-4 p-3 rounded border border-red-200 bg-red-50 text-sm text-red-700">{{ error }}</div>
+{% endif %}
+
+<div class="bg-white border rounded-lg p-5 space-y-2 max-w-2xl">
+  <div class="text-sm"><span class="text-slate-500">Patient:</span> {{ claim.patient_id }}</div>
+  <div class="text-sm"><span class="text-slate-500">Amount:</span> ${{ "%.2f"|format(claim.amount) }}</div>
+  <div class="text-sm"><span class="text-slate-500">Payer:</span> {{ claim.payer }}</div>
+  <div class="text-sm"><span class="text-slate-500">Service date:</span> {{ claim.service_date }}</div>
+  <div class="text-sm">
+    <span class="text-slate-500">Status:</span>
+    <span class="font-medium">{{ claim.status }}</span>
+  </div>
+  <div class="text-sm"><span class="text-slate-500">Description:</span> {{ claim.description or "-" }}</div>
+
+  {% if claim.status == "REJECTED" %}
+    <div class="mt-3 p-3 rounded border border-red-200 bg-red-50">
+      <div class="text-sm font-medium text-red-700">Rejection reason</div>
+      <div class="text-sm text-red-700">{{ claim.decision_reason }}</div>
+    </div>
+  {% endif %}
+</div>
+
+{% if can_decide %}
+  <div class="mt-4 flex flex-wrap items-center gap-2">
+    <form method="post" action="/claims/{{ claim.id }}/approve">
+      <button class="px-3 py-2 rounded bg-emerald-600 text-white text-sm hover:bg-emerald-700"
+              {% if claim.status != "PENDING" %}disabled{% endif %}>
+        Approve
+      </button>
+    </form>
+
+    <form method="post" action="/claims/{{ claim.id }}/reject" class="flex items-center gap-2">
+      <input name="reason" class="px-3 py-2 border rounded-md text-sm" placeholder="Reason"
+             {% if claim.status != "PENDING" %}disabled{% endif %} />
+      <button class="px-3 py-2 rounded bg-red-600 text-white text-sm hover:bg-red-700"
+              {% if claim.status != "PENDING" %}disabled{% endif %}>
+        Reject
+      </button>
+    </form>
+  </div>
+{% endif %}
+
+{% endblock %}

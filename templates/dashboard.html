@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="flex items-end justify-between mb-4">
+  <div>
+    <h1 class="text-xl font-semibold">Dashboard</h1>
+    <div class="text-sm text-slate-500">Signed in as {{ user.email }}</div>
+  </div>
+</div>
+
+<div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+  <div class="bg-white border rounded-lg p-4">
+    <div class="text-xs text-slate-500">Claims</div>
+    <div class="text-2xl font-semibold mt-1">{{ metrics.total_claims }}</div>
+  </div>
+
+  <div class="bg-white border rounded-lg p-4">
+    <div class="text-xs text-slate-500">Pending</div>
+    <div class="text-2xl font-semibold mt-1">{{ metrics.pending_claims }}</div>
+  </div>
+
+  <div class="bg-white border rounded-lg p-4">
+    <div class="text-xs text-slate-500">Patients</div>
+    <div class="text-2xl font-semibold mt-1">{{ metrics.total_patients }}</div>
+  </div>
+
+  <div class="bg-white border rounded-lg p-4">
+    <div class="text-xs text-slate-500">Total Amount</div>
+    <div class="text-2xl font-semibold mt-1">${{ "%.2f"|format(metrics.total_amount) }}</div>
+  </div>
+</div>
+
+<div class="mt-6 bg-white border rounded-lg p-4">
+  <div class="font-semibold">Quick actions</div>
+  <div class="mt-3 flex flex-wrap gap-2 text-sm">
+    <a href="/claims" class="px-3 py-2 rounded border hover:bg-slate-50">View claims</a>
+
+    {% if can_manage_patients %}
+      <a href="/patients" class="px-3 py-2 rounded border hover:bg-slate-50">View patients</a>
+      <a href="/patients/new" class="px-3 py-2 rounded bg-slate-900 text-white hover:bg-slate-800">Add patient</a>
+    {% endif %}
+
+    {% if user.role in ["admin","staff"] %}
+      <a href="/claims/new" class="px-3 py-2 rounded border hover:bg-slate-50">Submit claim</a>
+    {% endif %}
+
+    {% if can_view_audit %}
+      <a href="/audit" class="px-3 py-2 rounded border hover:bg-slate-50">Audit logs</a>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}
