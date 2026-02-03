@@ -13,15 +13,15 @@ class User(Base):
     password_hash = Column(String(255), nullable=False)
     role = Column(String(50), nullable=False)
 
-    # NEW: patient user can be linked to a Patient row
+    
     patient_id = Column(Integer, ForeignKey("patients.id"), nullable=True)
 
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
-    # Relationship via users.patient_id -> patients.id
+   
     patient = relationship("Patient", foreign_keys=[patient_id])
 
-    # IMPORTANT: Relationship via patients.created_by -> users.id
+  
     created_patients = relationship(
         "Patient",
         back_populates="created_by_user",
@@ -52,7 +52,6 @@ class Patient(Base):
     created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
-    # IMPORTANT: specify which FK links Patient -> User
     created_by_user = relationship(
         "User",
         back_populates="created_patients",
@@ -109,3 +108,4 @@ class AuditLog(Base):
 
     metadata_json = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
