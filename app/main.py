@@ -79,6 +79,76 @@ def logout(request: Request, db: Session = Depends(get_db)):
     logout_user(request)
     return RedirectResponse("/login", status_code=302)
 
+@app.get("/signup")
+def signup_page(request: Request):
+    return templates.TemplateResponse("signup.html", {"request": request, "error": None})
+
+
+
+@app.post("/signup")
+def signup(
+    request: Request,
+    db: Session = Depends(get_db),
+    email: str = Form(...),
+    password: str = Form(...),
+    full_name: str = Form(...),
+    dob: str = Form(...),
+    phone: str = Form(""),
+):
+    email_norm = email.strip().lower()
+    if not email_norm:
+        return templates.TemplateResponse("signup.html", {"request": request, "error": "Email required"})
+    if len(password) < 6:
+        return templates.TemplateResponse("signup.html", {"request": request, "error": "Password must be at least 6 chars"})
+    if not full_name.strip() or not dob.strip():
+        return templates.TemplateResponse("signup.html", {"request": request, "error": "Full name and DOB required"})
+
+    existing = db.execute(select(User).where(User.email == email_norm)).scalar_one_or_none()
+    if existing:
+        return templates.TemplateResponse("signup.html", {"request": request, "error": "Email already registered"})
+
+ 
+    admin_user = db.execute(
+        select(User).where(User.role == "admin").order_by(User.id)
+    ).scalar_one_or_none()
+    admin_id = admin_user.id if admin_user else 1
+
+  
+    patient = Patient(
+        full_name=full_name.strip(),
+        dob=dob.strip(),
+        phone=phone.strip() or None,
+        created_by=admin_id,
+    )
+    db.add(patient)
+    db.commit()
+    db.refresh(patient)
+
+    # create user linked to patient
+    user = User(
+        email=email_norm,
+        password_hash=hash_password(password),
+        role="patient",
+        patient_id=patient.id,
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    write_audit(
+        db,
+        actor_id=user.id,
+        action="SIGNUP",
+        entity_type="users",
+        entity_id=user.id,
+        metadata={"email": user.email, "patient_id": patient.id},
+    )
+
+    login_user(request, user)
+    return RedirectResponse("/dashboard", status_code=302)
+
+
+
 
 
 @app.get("/dashboard")
@@ -113,6 +183,7 @@ def patients_list(request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
     require_roles(user, {"admin", "staff"})
 
+
     patients = db.execute(select(Patient).order_by(desc(Patient.id))).scalars().all()
     return templates.TemplateResponse("patients_list.html", {"request": request, "user": user, "patients": patients})
 
@@ -121,6 +192,7 @@ def patients_list(request: Request, db: Session = Depends(get_db)):
 def patient_new_page(request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
     require_roles(user, {"admin", "staff"})
+
     return templates.TemplateResponse("patient_form.html", {"request": request, "user": user, "error": None})
 
 
@@ -134,6 +206,7 @@ def patient_create(
 ):
     user = get_current_user(request, db)
     require_roles(user, {"admin", "staff"})
+
 
     if not full_name.strip():
         return templates.TemplateResponse("patient_form.html", {"request": request, "user": user, "error": "Name required"})
@@ -168,8 +241,14 @@ def claim_new_page(request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
     require_roles(user, {"admin", "staff"})
 
-    patients = db.execute(select(Patient).order_by(desc(Patient.id))).scalars().all()
-    return templates.TemplateResponse("claim_form.html", {"request": request, "user": user, "patients": patients, "error": None})
+    patients = []
+    if user.role in {"admin", "staff"}:
+        patients = db.execute(select(Patient).order_by(desc(Patient.id))).scalars().all()
+
+    return templates.TemplateResponse(
+        "claim_form.html",
+        {"request": request, "user": user, "patients": patients, "error": None},
+    )
 
 
 @app.post("/claims/new")
@@ -184,6 +263,12 @@ def claim_create(
 ):
     user = get_current_user(request, db)
     require_roles(user, {"admin", "staff"})
+    
+    if user.role == "patient":
+        if not user.patient_id:
+            return templates.TemplateResponse("claim_form.html", {"request": request, "user": user, "patients": [], "error": "Patient profile not linked"})
+        patient_id = user.patient_id
+
 
     if amount <= 0:
         patients = db.execute(select(Patient).order_by(desc(Patient.id))).scalars().all()
@@ -227,6 +312,7 @@ def claim_approve(request: Request, claim_id: int, db: Session = Depends(get_db)
     user = get_current_user(request, db)
     require_roles(user, {"admin", "staff"})
 
+
     claim = db.execute(select(Claim).where(Claim.id == claim_id)).scalar_one_or_none()
     if not claim:
         return RedirectResponse("/claims", status_code=302)
@@ -250,6 +336,7 @@ def claim_reject(
     user = get_current_user(request, db)
     require_roles(user, {"admin", "staff"})
 
+
     claim = db.execute(select(Claim).where(Claim.id == claim_id)).scalar_one_or_none()
     if not claim:
         return RedirectResponse("/claims", status_code=302)
@@ -270,3 +357,63 @@ def audit_page(request: Request, db: Session = Depends(get_db)):
 
     logs = db.execute(select(AuditLog).order_by(desc(AuditLog.id)).limit(200)).scalars().all()
     return templates.TemplateResponse("audit.html", {"request": request, "user": user, "logs": logs})
+
+@app.get("/patients/{patient_id}/edit")
+def patient_edit_page(request: Request, patient_id: int, db: Session = Depends(get_db)):
+    user = get_current_user(request, db)
+    require_roles(user, {"admin", "staff"})
+
+    patient = db.execute(select(Patient).where(Patient.id == patient_id)).scalar_one_or_none()
+    if not patient:
+        return RedirectResponse("/patients", status_code=302)
+
+    return templates.TemplateResponse("patient_edit.html", {"request": request, "user": user, "patient": patient, "error": None})
+
+
+@app.post("/patients/{patient_id}/edit")
+def patient_update(
+    request: Request,
+    patient_id: int,
+    db: Session = Depends(get_db),
+    full_name: str = Form(...),
+    dob: str = Form(...),
+    phone: str = Form(""),
+):
+    user = get_current_user(request, db)
+    require_roles(user, {"admin", "staff"})
+
+    patient = db.execute(select(Patient).where(Patient.id == patient_id)).scalar_one_or_none()
+    if not patient:
+        return RedirectResponse("/patients", status_code=302)
+ 
+    if not full_name.strip() or not dob.strip():
+        return templates.TemplateResponse("patient_edit.html", {"request": request, "user": user, "patient": patient, "error": "Name and DOB required"})
+
+    patient.full_name = full_name.strip()
+    patient.dob = dob.strip()
+    patient.phone = phone.strip() or None
+    db.commit()
+
+    write_audit(db, actor_id=user.id, action="UPDATE_PATIENT", entity_type="patients", entity_id=patient.id, metadata={"name": patient.full_name})
+    return RedirectResponse("/patients", status_code=302)
+
+
+@app.post("/patients/{patient_id}/delete")
+def patient_delete(request: Request, patient_id: int, db: Session = Depends(get_db)):
+    user = get_current_user(request, db)
+    require_roles(user, {"admin"})  
+
+    patient = db.execute(select(Patient).where(Patient.id == patient_id)).scalar_one_or_none()
+    if not patient:
+        return RedirectResponse("/patients", status_code=302)
+
+   
+    existing_claim = db.execute(select(Claim).where(Claim.patient_id == patient_id).limit(1)).scalar_one_or_none()
+    if existing_claim:
+        return RedirectResponse("/patients", status_code=302)
+
+    db.delete(patient)
+    db.commit()
+
+    write_audit(db, actor_id=user.id, action="DELETE_PATIENT", entity_type="patients", entity_id=patient_id, metadata=None)
+    return RedirectResponse("/patients", status_code=302)

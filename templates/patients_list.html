@@ -3,7 +3,9 @@
 
 <div class="flex items-center justify-between mb-4">
   <h1 class="text-xl font-semibold">Patients</h1>
-  <a href="/patients/new" class="px-3 py-2 rounded bg-slate-900 text-white text-sm hover:bg-slate-800">Add patient</a>
+  <a href="/patients/new" class="px-3 py-2 rounded bg-slate-900 text-white text-sm hover:bg-slate-800">
+    Add patient
+  </a>
 </div>
 
 <div class="bg-white border rounded-lg overflow-hidden">
@@ -14,8 +16,10 @@
         <th class="text-left p-3">Name</th>
         <th class="text-left p-3">DOB</th>
         <th class="text-left p-3">Phone</th>
+        <th class="text-left p-3">Action</th>
       </tr>
     </thead>
+
     <tbody>
       {% for p in patients %}
       <tr class="border-b hover:bg-slate-50">
@@ -23,11 +27,25 @@
         <td class="p-3">{{ p.full_name }}</td>
         <td class="p-3">{{ p.dob }}</td>
         <td class="p-3">{{ p.phone or "-" }}</td>
+
+        <td class="p-3">
+          <a class="text-slate-900 hover:underline" href="/patients/{{ p.id }}/edit">Edit</a>
+
+          {% if user.role == "admin" %}
+            <form method="post" action="/patients/{{ p.id }}/delete" class="inline">
+              <button class="ml-2 text-red-600 hover:underline" type="submit">
+                Delete
+              </button>
+            </form>
+          {% endif %}
+        </td>
       </tr>
       {% endfor %}
 
       {% if patients|length == 0 %}
-      <tr><td class="p-6 text-slate-500" colspan="4">No patients yet.</td></tr>
+      <tr>
+        <td class="p-6 text-slate-500" colspan="5">No patients yet.</td>
+      </tr>
       {% endif %}
     </tbody>
   </table>

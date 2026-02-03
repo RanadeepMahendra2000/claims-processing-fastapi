@@ -8,14 +8,19 @@
 {% endif %}
 
 <form method="post" action="/claims/new" class="bg-white border rounded-lg p-5 space-y-4 max-w-xl">
-  <div>
-    <label class="text-sm font-medium">Patient</label>
-    <select name="patient_id" class="mt-1 w-full px-3 py-2 border rounded-md" required>
-      {% for p in patients %}
-        <option value="{{ p.id }}">{{ p.id }} — {{ p.full_name }}</option>
-      {% endfor %}
-    </select>
-  </div>
+
+  {% if user.role in ["admin","staff"] %}
+    <div>
+      <label class="text-sm font-medium">Patient</label>
+      <select name="patient_id" class="mt-1 w-full px-3 py-2 border rounded-md" required>
+        {% for p in patients %}
+          <option value="{{ p.id }}">{{ p.id }} — {{ p.full_name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  {% else %}
+    
+  {% endif %}
 
   <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
     <div>

@@ -12,9 +12,21 @@ class User(Base):
     email = Column(String(255), unique=True, index=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
     role = Column(String(50), nullable=False)
+
+    # NEW: patient user can be linked to a Patient row
+    patient_id = Column(Integer, ForeignKey("patients.id"), nullable=True)
+
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
-    created_patients = relationship("Patient", back_populates="created_by_user")
+    # Relationship via users.patient_id -> patients.id
+    patient = relationship("Patient", foreign_keys=[patient_id])
+
+    # IMPORTANT: Relationship via patients.created_by -> users.id
+    created_patients = relationship(
+        "Patient",
+        back_populates="created_by_user",
+        foreign_keys="Patient.created_by",
+    )
 
     submitted_claims = relationship(
         "Claim",
@@ -27,18 +39,26 @@ class User(Base):
         back_populates="decision_by_user",
         foreign_keys="Claim.decision_by",
     )
+
+
 class Patient(Base):
     __tablename__ = "patients"
 
     id = Column(Integer, primary_key=True)
     full_name = Column(String(255), nullable=False)
-    dob = Column(String(20), nullable=False)  
+    dob = Column(String(20), nullable=False)
     phone = Column(String(50), nullable=True)
 
     created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
-    created_by_user = relationship("User", back_populates="created_patients")
+    # IMPORTANT: specify which FK links Patient -> User
+    created_by_user = relationship(
+        "User",
+        back_populates="created_patients",
+        foreign_keys=[created_by],
+    )
+
     claims = relationship("Claim", back_populates="patient")
 
 
@@ -76,15 +96,16 @@ class Claim(Base):
         back_populates="decided_claims",
     )
 
+
 class AuditLog(Base):
     __tablename__ = "audit_logs"
 
     id = Column(Integer, primary_key=True)
     actor_id = Column(Integer, ForeignKey("users.id"), nullable=False)
 
-    action = Column(String(100), nullable=False)       
-    entity_type = Column(String(50), nullable=False)  
-    entity_id = Column(Integer, nullable=False)        
+    action = Column(String(100), nullable=False)
+    entity_type = Column(String(50), nullable=False)
+    entity_id = Column(Integer, nullable=False)
 
-    metadata_json = Column(Text, nullable=True)       
+    metadata_json = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)

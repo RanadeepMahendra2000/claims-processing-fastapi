@@ -20,9 +20,14 @@
       {% if user %}
       <nav class="flex items-center gap-3 text-sm">
         <a class="hover:underline" href="/dashboard">Dashboard</a>
-        <a class="hover:underline" href="/patients">Patients</a>
+
+        {% if user.role in ["admin","staff"] %}
+          <a class="hover:underline" href="/patients">Patients</a>
+        {% endif %}
+
         <a class="hover:underline" href="/claims">Claims</a>
-        {% if user.role in ["admin","insurer"] %}
+
+        {% if user.role == "admin" %}
           <a class="hover:underline" href="/audit">Audit</a>
         {% endif %}
 
